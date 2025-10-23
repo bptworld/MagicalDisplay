@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cartoon Star Flying Around</title>
+<style>
+  :root { --bg: radial-gradient(ellipse at center, #0b1736 0%, #080f26 60%, #040915 100%); }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    overflow: hidden;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    user-select: none;
+    cursor: default;
+  }
+  /* A soft star glow */
+  .glow {
+    position: absolute;
+    width: 140px; height: 140px;
+    filter: drop-shadow(0 0 10px rgba(255, 238, 95, .9))
+            drop-shadow(0 0 24px rgba(255, 238, 95, .6));
+    will-change: transform;
+  }
+  /* Hint text */
+  .hint {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+    color: #a9b7ff; font-size: 12px; letter-spacing: .02em; opacity: .6;
+  }
+</style>
+</head>
+<body>
+  <!-- The moving container -->
+  <div id="star" class="glow" aria-label="cartoon star" title="⭐ zoom!">
+    <!-- Cute cartoon star (inline SVG) -->
+    <svg viewBox="0 0 100 100" width="140" height="140">
+      <!-- star body -->
+      <path d="M50 5 L61 35 L94 38 L68 58 L76 90 L50 73 L24 90 L32 58 L6 38 L39 35 Z"
+            fill="#ffe45e" stroke="#f7c948" stroke-width="3" />
+      <!-- blush -->
+      <ellipse cx="35" cy="58" rx="6" ry="4" fill="#ff9bb3" opacity=".9"/>
+      <ellipse cx="65" cy="58" rx="6" ry="4" fill="#ff9bb3" opacity=".9"/>
+      <!-- eyes -->
+      <circle cx="40" cy="48" r="5" fill="#1b1b1b"/>
+      <circle cx="60" cy="48" r="5" fill="#1b1b1b"/>
+      <circle cx="38.5" cy="46.5" r="1.5" fill="white"/>
+      <circle cx="58.5" cy="46.5" r="1.5" fill="white"/>
+      <!-- smile -->
+      <path d="M38 64 Q50 70 62 64" fill="none" stroke="#1b1b1b" stroke-width="3" stroke-linecap="round"/>
+      <!-- tiny twinkles on the star -->
+      <g opacity=".8">
+        <circle cx="30" cy="22" r="2" fill="white"/>
+        <circle cx="76" cy="28" r="1.8" fill="white"/>
+        <circle cx="20" cy="70" r="1.6" fill="white"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="hint">Click to toggle speed • Resizes friendly</div>
+
+<script>
+(function () {
+  const el = document.getElementById('star');
+
+  // Position & velocity (px and px/s), animation state
+  let x = 50, y = 50;
+  let vx = 220, vy = 160;          // pixels per second
+  let angle = 0, spin = 90;        // degrees per second
+  let pulse = 0, pulseSpeed = 2;   // small scale breathing
+  let speedMultiplier = 1;         // click to toggle
+
+  // Keep star within viewport
+  const size = 140; // element width/height
+  function bounds() {
+    return {
+      W: window.innerWidth,
+      H: window.innerHeight,
+      maxX: Math.max(0, window.innerWidth - size),
+      maxY: Math.max(0, window.innerHeight - size)
+    };
+  }
+
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(0.032, (now - last) / 1000); // clamp delta (s)
+    last = now;
+
+    const { maxX, maxY } = bounds();
+
+    // Integrate motion
+    x += vx * dt * speedMultiplier;
+    y += vy * dt * speedMultiplier;
+    angle += spin * dt * speedMultiplier;
+    pulse += pulseSpeed * dt * speedMultiplier;
+
+    // Bounce with a tiny random english for fun
+    if (x <= 0)      { x = 0;      vx = Math.abs(vx) * (0.98 + Math.random()*0.04);  nudge(); }
+    if (x >= maxX)   { x = maxX;   vx = -Math.abs(vx) * (0.98 + Math.random()*0.04); nudge(); }
+    if (y <= 0)      { y = 0;      vy = Math.abs(vy) * (0.98 + Math.random()*0.04);  nudge(); }
+    if (y >= maxY)   { y = maxY;   vy = -Math.abs(vy) * (0.98 + Math.random()*0.04); nudge(); }
+
+    const scale = 1 + Math.sin(pulse * Math.PI * 2) * 0.05; // subtle 5% breathe
+
+    el.style.transform =
+      `translate(${x}px, ${y}px) rotate(${angle}deg) scale(${scale})`;
+
+    requestAnimationFrame(tick);
+  }
+
+  function nudge() {
+    // Slightly tweak spin on each bounce
+    const d = (Math.random() * 40 - 20);
+    spin = Math.max(40, Math.min(180, spin + d));
+  }
+
+  // Resize safety: keep inside frame
+  window.addEventListener('resize', () => {
+    const { maxX, maxY } = bounds();
+    x = Math.min(Math.max(0, x), maxX);
+    y = Math.min(Math.max(0, y), maxY);
+  });
+
+  // Click to toggle speed
+  window.addEventListener('click', () => {
+    speedMultiplier = speedMultiplier === 1 ? 1.75 : 1;
+  });
+
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
